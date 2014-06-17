@@ -2,11 +2,13 @@
 #include <errno.h>
 #include "popen_plus.h"
 
-/* tab+name+blank */
-int max_assign_len = 30;
-
-
 extern const char* __progname;
+
+/* tab+name+blank */
+int max_assign_len = 0;
+
+int old_stdout_fd;
+
 typedef struct _higig2               /* Byte # */
 {                                    /* "Legacy" PPD Overlay 1 */
     uint32_t start              : 8; /* 0 */
@@ -76,8 +78,8 @@ void print_name(char* name, int level)
 {
     int len = level * 4;
     print_blanks(len);
-    printf("%s ", name);
-    len += strlen(name) + 1;
+    printf(".%s ", name);
+    len += strlen(name) + 2;
 
     if (len > max_assign_len)
     {
@@ -85,7 +87,8 @@ void print_name(char* name, int level)
     }
 
     print_blanks(max_assign_len - len);
-    printf("=");
+
+    printf("= ");
 }
 
 int get_token(FILE* fp, char* token)
@@ -150,6 +153,11 @@ void stat_parsor(FILE* fp)
     {
         token_ret = get_token(fp, token);
 
+        if (token_ret == -1)
+        {
+            break;
+        }
+
         switch (state)
         {
         case S_IDLE:
@@ -171,7 +179,7 @@ void stat_parsor(FILE* fp)
             else
             {
                 /* print the value */
-                printf(" %s\n", token);
+                printf("%s,\n", token);
                 state = S_GET_NAME;
             }
             break;
@@ -197,29 +205,47 @@ void stat_parsor(FILE* fp)
     }
 }
 
-int main()
+#define STRUCT_POINTER(x) #x, x
+
+void dump_struct(const char* type, const char* name, void* address)
 {
-    struct person              johndoe;
-    char                       cmd[120];
     struct popen_plus_process* p_fp;
-    char*                      line = NULL;
-    size_t                     len;
 
-    johndoe.age = 10;
-/*    FILE* fp = fopen("out.txt", "r"); */
-/*    stat_parsor(fp); */
+    char cmd[120];
 
-    printf("hello world!\n");
+    printf("(%s)(*(%s)) = /* @%p*/", type, name, address);
 
     sprintf(cmd, "gdb -n -q %s %d", __progname, getpid());
     p_fp = popen_plus(cmd);
 
-    fprintf(p_fp->write_fp, "p/x (struct %s)*%p\nquit\n", "person", &johndoe);
+    fprintf(p_fp->write_fp, "p/x (%s)*%p\n", type, address);
+    fprintf(p_fp->write_fp, "p/x (%s)*%p\n", type, address);
+    fprintf(p_fp->write_fp, "quit\n");
     fflush(p_fp->write_fp);
+
+    max_assign_len = 0;
+    old_stdout_fd  = dup(fileno(stdout));
+    freopen("/dev/null", "w", stdout);
+
+    stat_parsor(p_fp->read_fp);
+    fflush(stdout);
+
+    dup2(old_stdout_fd, fileno(stdout));
+    close(old_stdout_fd);
 
     stat_parsor(p_fp->read_fp);
 
     popen_plus_close(p_fp);
+}
+
+
+int main()
+{
+    struct person johndoe;
+
+    johndoe.age = 10;
+
+    dump_struct("struct person", STRUCT_POINTER(&johndoe));
 
     return 0;
 }

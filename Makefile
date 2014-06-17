@@ -22,7 +22,7 @@ OBJ_DIR       := obj
 
 INC_DIRS      := -I.
 
-CFLAGS        := $(INC_DIRS) -g
+CFLAGS        := $(INC_DIRS) -g -Wall -Werror
 LD_FLAGS      :=
 
 # target define
