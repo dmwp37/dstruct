@@ -140,6 +140,35 @@ int get_token(FILE* fp, char* token)
     return ret;
 }
 
+int get_type_name(FILE* fp, char* type_name)
+{
+    int         ret  = -1;
+    char*       line = NULL, * p;
+    size_t      len;
+    const char* match_key = "type = ";
+
+    int is_done = 0;
+    while (!is_done)
+    {
+        if (getline(&line, &len, fp) < 0)
+        {
+            break;
+        }
+
+        if ((p = strstr(line, match_key)) != NULL)
+        {
+            ret     = 1;
+            is_done = 1;
+            p      += strlen(match_key);
+            strcpy(type_name, p);
+            type_name[strlen(type_name) - 1] = '\0';
+        }
+    }
+
+    free(line);
+
+    return ret;
+}
 
 void stat_parsor(FILE* fp)
 {
@@ -205,23 +234,38 @@ void stat_parsor(FILE* fp)
     }
 }
 
-#define STRUCT_POINTER(x) #x, x
+#define DUMP_STRUCT(pointer) dump_struct(# pointer, pointer)
 
-void dump_struct(const char* type, const char* name, void* address)
+void dump_struct(const char* name, void* address)
 {
     struct popen_plus_process* p_fp;
 
-    char cmd[120];
+    char buf[256];
+    int  flag = 1;
 
-    printf("(%s)(*(%s)) = /* @%p*/", type, name, address);
+    sprintf(buf, "gdb -n -q %s %d", __progname, getpid());
+    p_fp = popen_plus(buf);
 
-    sprintf(cmd, "gdb -n -q %s %d", __progname, getpid());
-    p_fp = popen_plus(cmd);
-
-    fprintf(p_fp->write_fp, "p/x (%s)*%p\n", type, address);
-    fprintf(p_fp->write_fp, "p/x (%s)*%p\n", type, address);
-    fprintf(p_fp->write_fp, "quit\n");
+    fprintf(p_fp->write_fp, "thread 1\n");
+    fprintf(p_fp->write_fp, "set var flag=0\n");
+    fprintf(p_fp->write_fp, "frame 1\n");
+    fprintf(p_fp->write_fp, "whatis %s\n", name);
+    fprintf(p_fp->write_fp, "p/x *%s\n", name);
+    fprintf(p_fp->write_fp, "p/x *%s\n", name);
+    fprintf(p_fp->write_fp, "detach\nquit\n");
     fflush(p_fp->write_fp);
+
+    while (flag)  /* trap here */
+    {
+    }
+    if (get_type_name(p_fp->read_fp, buf) < 0)
+    {
+        printf("can't get type name");
+    }
+    else
+    {
+        printf("(%s)(%s) = /* @%p */", buf, name, address);
+    }
 
     max_assign_len = 0;
     old_stdout_fd  = dup(fileno(stdout));
@@ -243,9 +287,11 @@ int main()
 {
     struct person johndoe;
 
+    typedef struct person person_t;
+    person_t* p = &johndoe;
     johndoe.age = 10;
 
-    dump_struct("struct person", STRUCT_POINTER(&johndoe));
+    DUMP_STRUCT(p);
 
     return 0;
 }
