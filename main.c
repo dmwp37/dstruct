@@ -46,6 +46,7 @@ typedef struct _higig2               /* Byte # */
 
 typedef struct person_s
 {
+    char     xx[4];
     char*    name;
     uint64_t age;
     int      height;

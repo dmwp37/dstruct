@@ -11,6 +11,8 @@ enum
     S_IDLE,
     S_GET_VALUE,
     S_GET_NAME,
+    S_GET_VALUE_S,
+    S_LEFT_BRACE,
 };
 
 static void print_blanks(int num)
@@ -141,22 +143,91 @@ static void stat_parsor(FILE* fp)
             {
                 state = S_GET_VALUE;
             }
+            else if (token_ret == 1)
+            {
+                /* another value */
+                print_blanks(max_assign_len);
+                printf("%s,\n", token);
+            }
+            else if (token_ret == '}')
+            {
+                print_blanks(4 * (brace_level - 1));
+                printf("}\n");
+                brace_level--;
+                if (brace_level == 0)
+                {
+                    is_done = 1;
+                }
+            }
             break;
 
         case S_GET_VALUE:
             if (token_ret == '{')
             {
                 brace_level++;
-                state = S_GET_NAME;
+                state = S_LEFT_BRACE;
                 printf("\n");
                 print_blanks(4 * (brace_level - 1));
                 printf("{\n");
             }
-            else
+            else if (token_ret == '}')
+            {
+                print_blanks(4 * (brace_level - 1));
+                printf("}\n");
+                brace_level--;
+                if (brace_level == 0)
+                {
+                    is_done = 1;
+                }
+                state = S_GET_NAME;
+            }
+            else if (token_ret == 1)
             {
                 /* print the value */
                 printf("%s,\n", token);
                 state = S_GET_NAME;
+            }
+            break;
+
+        case S_GET_VALUE_S:
+            if (token_ret == '}')
+            {
+                print_blanks(4 * (brace_level - 1));
+                printf("}\n");
+                brace_level--;
+                if (brace_level == 0)
+                {
+                    is_done = 1;
+                }
+                state = S_GET_NAME;
+            }
+            else if (token_ret == 1)
+            {
+                /* print the value */
+                printf("%s, ", token);
+            }
+            break;
+
+        case S_LEFT_BRACE:
+            if (token_ret == '{')
+            {
+                brace_level++;
+                state = S_LEFT_BRACE;
+                printf("\n");
+                print_blanks(4 * (brace_level - 1));
+                printf("{\n");
+            }
+            else if (token[0] == '0')
+            {
+                /* this is a value! */
+                printf("%s,\n", token);
+                state = S_GET_VALUE_S;
+            }
+            else
+            {
+                /* this is a name */
+                print_name(token, brace_level);
+                state = S_IDLE;
             }
             break;
 
@@ -201,8 +272,9 @@ void dump_struct(const char* name, void* address)
     fprintf(p_fp->write_fp, "detach\nquit\n");
     fflush(p_fp->write_fp);
 
-    while (flag);  /* trap here */
-
+    while (flag)   /* trap here */
+    {
+    }
     if (get_type_name(p_fp->read_fp, buf) < 0)
     {
         printf("can't get type name");
