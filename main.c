@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <inttypes.h>
-#include "dump_struct.h"
+#include "dbg_dump.h"
 
 typedef struct _higig2               /* Byte # */
 {                                    /* "Legacy" PPD Overlay 1 */
@@ -42,7 +42,7 @@ typedef struct _higig2               /* Byte # */
     uint32_t pfm                : 2;
     uint32_t _rsvd5             : 5;               /* 15 */
     uint32_t hdr_ext_len        : 3;
-    int a[3][4];
+    int      a[3][4];
 } higig2_t;
 
 typedef struct person_s
@@ -56,13 +56,18 @@ typedef struct person_s
 
 int main()
 {
+    int             a[3];
     struct person_s johndoe;
     person_t*       p = &johndoe;
-    
-    johndoe.age = 10;
 
-    DUMP_STRUCT(p);
+    johndoe.age = 10 + a[0];
 
+    p = p;
+
+    DBG_PRINT(p);
+    DBG_PRINT(*p);
+    DBG_PRINT(johndoe);
+    DBG_PRINT(a);
     return 0;
 }
 

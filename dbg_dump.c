@@ -6,7 +6,7 @@ extern const char* __progname;
 /* tab+name+blank */
 static int max_assign_len = 0;
 
-// state machine states
+/* state machine states */
 enum
 {
     S_GET_ASSIGN = 0,
@@ -17,7 +17,7 @@ enum
     S_MAX
 };
 
-// token input type
+/* token input type */
 enum
 {
     T_VALUE = 0,
@@ -29,14 +29,14 @@ enum
     T_COMMA,
 };
 
-// state transaction table
-static int state_table[S_MAX][T_S_MAX] = 
+/* state transaction table */
+static int state_table[S_MAX][T_S_MAX] =
 {
     /* state           VALUE         NAME          ASSIGN       LEFT_B        RIGHT_B    */
     [S_GET_ASSIGN] = { -1,           -1,           S_GET_VALUE, -1,           -1         },
-    [S_GET_VALUE ] = { S_GET_NAME,   -1,           -1,          S_LEFT_BRACE, -1         },
-    [S_GET_NAME  ] = { -1,           S_GET_ASSIGN, -1,          S_LEFT_BRACE, S_GET_NAME },
-    [S_GET_ARRAY ] = { S_GET_ARRAY,  S_GET_ARRAY,  -1,          -1,           S_GET_NAME },
+    [S_GET_VALUE]  = { S_GET_NAME,   -1,           -1,          S_LEFT_BRACE, -1         },
+    [S_GET_NAME]   = { -1,           S_GET_ASSIGN, -1,          S_LEFT_BRACE, S_GET_NAME },
+    [S_GET_ARRAY]  = { S_GET_ARRAY,  S_GET_ARRAY,  -1,          -1,           S_GET_NAME },
     [S_LEFT_BRACE] = { S_GET_ARRAY,  S_GET_ASSIGN, -1,          S_LEFT_BRACE, -1         },
 };
 
@@ -89,22 +89,25 @@ static int get_token(FILE* fp, char* token)
         case EOF:
             is_done = 1;
             break;
-            
+
         case ',':
             if (ret == -1)
             {
                 return T_COMMA;
             }
+
         case '{':
             if (ret == -1)
             {
                 return T_LEFT_BRACE;
             }
+
         case '}':
             if (ret == -1)
             {
                 return T_RIGHT_BRACE;
             }
+
         case '=':
             if (ret == -1)
             {
@@ -121,7 +124,7 @@ static int get_token(FILE* fp, char* token)
     }
 
     *p_char = '\0';
-    
+
     if (ret == T_NAME && *token == '0')
     {
         ret = T_VALUE;
@@ -166,9 +169,12 @@ static void stat_parsor(FILE* fp)
     int  brace_level = 0;
     int  token_ret;
     char token[256];
-    
-    // find the first '='
-    while(getc(fp) != '=');
+
+    /* find the first '=' */
+    while ((token_ret = getc(fp)) != '=' &&
+           token_ret != EOF)
+    {
+    }
 
     int is_done = 0;
     while (!is_done)
@@ -179,19 +185,20 @@ static void stat_parsor(FILE* fp)
         {
             break;
         }
-        
+
         if (token_ret == T_COMMA)
         {
             printf(",");
             continue;
         }
-        
+
         switch (state)
         {
         case -1:
             printf("state machine got an error\n");
             is_done = 1;
             break;
+
         case S_GET_ASSIGN:
             printf("= ");
             break;
@@ -208,6 +215,11 @@ static void stat_parsor(FILE* fp)
             {
                 /* print the value */
                 printf("%s", token);
+                if (brace_level == 0)
+                {
+                    is_done = 1;
+                    printf("\n");
+                }
             }
             break;
 
@@ -281,12 +293,12 @@ static void stat_parsor(FILE* fp)
             }
             break;
         }
-        
+
         state = state_table[state][token_ret];
     }
 }
 
-void dump_struct(const char* name, void* address)
+void dbg_dump(const char* name)
 {
     struct popen_plus_process* p_fp;
 
@@ -301,12 +313,15 @@ void dump_struct(const char* name, void* address)
     fprintf(p_fp->write_fp, "set var flag=0\n");
     fprintf(p_fp->write_fp, "frame 1\n");
     fprintf(p_fp->write_fp, "whatis %s\n", name);
-    fprintf(p_fp->write_fp, "p/x *%s\n", name);
-    fprintf(p_fp->write_fp, "p/x *%s\n", name);
+    fprintf(p_fp->write_fp, "p/x %s\n", name);
+    fprintf(p_fp->write_fp, "p/x %s\n", name);
     fprintf(p_fp->write_fp, "detach\nquit\n");
     fflush(p_fp->write_fp);
 
-    while (flag);   /* trap here */
+    while (flag)
+    {
+	    /* trap here */
+    }
 
     if (get_type_name(p_fp->read_fp, buf) < 0)
     {
@@ -315,7 +330,7 @@ void dump_struct(const char* name, void* address)
     }
     else
     {
-        printf("*(%s)(%s) = /* @%p */", buf, name, address);
+        printf("(%s)(%s) = ", buf, name);
     }
     
 //    int c;
