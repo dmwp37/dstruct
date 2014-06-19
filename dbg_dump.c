@@ -34,9 +34,9 @@ static int state_table[S_MAX][T_S_MAX] =
 {
     /* state           VALUE         NAME          ASSIGN       LEFT_B        RIGHT_B    */
     [S_GET_ASSIGN] = { -1,           -1,           S_GET_VALUE, -1,           -1         },
-    [S_GET_VALUE]  = { S_GET_NAME,   -1,           -1,          S_LEFT_BRACE, -1         },
-    [S_GET_NAME]   = { -1,           S_GET_ASSIGN, -1,          S_LEFT_BRACE, S_GET_NAME },
-    [S_GET_ARRAY]  = { S_GET_ARRAY,  S_GET_ARRAY,  -1,          -1,           S_GET_NAME },
+    [S_GET_VALUE ] = { S_GET_NAME,   -1,           -1,          S_LEFT_BRACE, -1         },
+    [S_GET_NAME  ] = { -1,           S_GET_ASSIGN, -1,          S_LEFT_BRACE, S_GET_NAME },
+    [S_GET_ARRAY ] = { S_GET_ARRAY,  S_GET_ARRAY,  -1,          -1,           S_GET_NAME },
     [S_LEFT_BRACE] = { S_GET_ARRAY,  S_GET_ASSIGN, -1,          S_LEFT_BRACE, -1         },
 };
 

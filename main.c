@@ -56,7 +56,7 @@ typedef struct person_s
 
 int main()
 {
-    int             a[3];
+    int             a[256] = {0};
     struct person_s johndoe;
     person_t*       p = &johndoe;
 
@@ -68,6 +68,9 @@ int main()
     DBG_PRINT(*p);
     DBG_PRINT(johndoe);
     DBG_PRINT(a);
+    DBG_PRINT(a[1]+10);
+    DBG_PRINT(sizeof(johndoe));
+
     return 0;
 }
 
