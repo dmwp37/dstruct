@@ -42,6 +42,7 @@ typedef struct _higig2               /* Byte # */
     uint32_t pfm                : 2;
     uint32_t _rsvd5             : 5;               /* 15 */
     uint32_t hdr_ext_len        : 3;
+    int a[3][4];
 } higig2_t;
 
 typedef struct person_s
@@ -57,7 +58,7 @@ int main()
 {
     struct person_s johndoe;
     person_t*       p = &johndoe;
-
+    
     johndoe.age = 10;
 
     DUMP_STRUCT(p);

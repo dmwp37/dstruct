@@ -6,13 +6,38 @@ extern const char* __progname;
 /* tab+name+blank */
 static int max_assign_len = 0;
 
+// state machine states
 enum
 {
-    S_IDLE,
+    S_GET_ASSIGN = 0,
     S_GET_VALUE,
     S_GET_NAME,
-    S_GET_VALUE_S,
+    S_GET_ARRAY,
     S_LEFT_BRACE,
+    S_MAX
+};
+
+// token input type
+enum
+{
+    T_VALUE = 0,
+    T_NAME,
+    T_ASSIGN,
+    T_LEFT_BRACE,
+    T_RIGHT_BRACE,
+    T_S_MAX,
+    T_COMMA,
+};
+
+// state transaction table
+static int state_table[S_MAX][T_S_MAX] = 
+{
+    /* state           VALUE         NAME          ASSIGN       LEFT_B        RIGHT_B    */
+    [S_GET_ASSIGN] = { -1,           -1,           S_GET_VALUE, -1,           -1         },
+    [S_GET_VALUE ] = { S_GET_NAME,   -1,           -1,          S_LEFT_BRACE, -1         },
+    [S_GET_NAME  ] = { -1,           S_GET_ASSIGN, -1,          S_LEFT_BRACE, S_GET_NAME },
+    [S_GET_ARRAY ] = { S_GET_ARRAY,  S_GET_ARRAY,  -1,          -1,           S_GET_NAME },
+    [S_LEFT_BRACE] = { S_GET_ARRAY,  S_GET_ASSIGN, -1,          S_LEFT_BRACE, -1         },
 };
 
 static void print_blanks(int num)
@@ -26,6 +51,7 @@ static void print_blanks(int num)
 static void print_name(char* name, int level)
 {
     int len = level * 4;
+    printf("\n");
     print_blanks(len);
     printf(".%s ", name);
     len += strlen(name) + 2;
@@ -36,8 +62,6 @@ static void print_name(char* name, int level)
     }
 
     print_blanks(max_assign_len - len);
-
-    printf("= ");
 }
 
 static int get_token(FILE* fp, char* token)
@@ -56,7 +80,6 @@ static int get_token(FILE* fp, char* token)
         case '\r':
         case '\n':
         case '\t':
-        case ',':
             if (ret != -1)
             {
                 is_done = 1;
@@ -66,13 +89,26 @@ static int get_token(FILE* fp, char* token)
         case EOF:
             is_done = 1;
             break;
-
+            
+        case ',':
+            if (ret == -1)
+            {
+                return T_COMMA;
+            }
         case '{':
+            if (ret == -1)
+            {
+                return T_LEFT_BRACE;
+            }
         case '}':
+            if (ret == -1)
+            {
+                return T_RIGHT_BRACE;
+            }
         case '=':
             if (ret == -1)
             {
-                return c;
+                return T_ASSIGN;
             }
             ungetc(c, fp);
             is_done = 1;
@@ -80,11 +116,16 @@ static int get_token(FILE* fp, char* token)
 
         default:
             *p_char++ = c;
-            ret       = 1;
+            ret       = T_NAME;
         }
     }
 
     *p_char = '\0';
+    
+    if (ret == T_NAME && *token == '0')
+    {
+        ret = T_VALUE;
+    }
 
     return ret;
 }
@@ -121,10 +162,13 @@ static int get_type_name(FILE* fp, char* type_name)
 
 static void stat_parsor(FILE* fp)
 {
-    int  state       = S_IDLE;
+    int  state       = S_GET_VALUE;
     int  brace_level = 0;
     int  token_ret;
     char token[256];
+    
+    // find the first '='
+    while(getc(fp) != '=');
 
     int is_done = 0;
     while (!is_done)
@@ -135,120 +179,110 @@ static void stat_parsor(FILE* fp)
         {
             break;
         }
-
+        
+        if (token_ret == T_COMMA)
+        {
+            printf(",");
+            continue;
+        }
+        
         switch (state)
         {
-        case S_IDLE:
-            if (token_ret == '=')
-            {
-                state = S_GET_VALUE;
-            }
-            else if (token_ret == 1)
-            {
-                /* another value */
-                print_blanks(max_assign_len);
-                printf("%s,\n", token);
-            }
-            else if (token_ret == '}')
-            {
-                print_blanks(4 * (brace_level - 1));
-                printf("}\n");
-                brace_level--;
-                if (brace_level == 0)
-                {
-                    is_done = 1;
-                }
-            }
+        case -1:
+            printf("state machine got an error\n");
+            is_done = 1;
+            break;
+        case S_GET_ASSIGN:
+            printf("= ");
             break;
 
         case S_GET_VALUE:
-            if (token_ret == '{')
+            if (token_ret == T_LEFT_BRACE)
             {
                 brace_level++;
-                state = S_LEFT_BRACE;
                 printf("\n");
                 print_blanks(4 * (brace_level - 1));
-                printf("{\n");
+                printf("{");
             }
-            else if (token_ret == '}')
-            {
-                print_blanks(4 * (brace_level - 1));
-                printf("}\n");
-                brace_level--;
-                if (brace_level == 0)
-                {
-                    is_done = 1;
-                }
-                state = S_GET_NAME;
-            }
-            else if (token_ret == 1)
+            else if (token_ret == T_VALUE)
             {
                 /* print the value */
-                printf("%s,\n", token);
-                state = S_GET_NAME;
+                printf("%s", token);
             }
             break;
 
-        case S_GET_VALUE_S:
-            if (token_ret == '}')
+        case S_GET_ARRAY:
+            if (token_ret == T_RIGHT_BRACE)
             {
+                printf("\n");
                 print_blanks(4 * (brace_level - 1));
-                printf("}\n");
+                printf("}");
                 brace_level--;
                 if (brace_level == 0)
                 {
                     is_done = 1;
+                    printf("\n");
                 }
-                state = S_GET_NAME;
             }
-            else if (token_ret == 1)
+            else if (token_ret == T_VALUE || token_ret == T_NAME)
             {
                 /* print the value */
-                printf("%s, ", token);
+                printf(" %s", token);
             }
             break;
 
         case S_LEFT_BRACE:
-            if (token_ret == '{')
+            if (token_ret == T_LEFT_BRACE)
             {
                 brace_level++;
                 state = S_LEFT_BRACE;
                 printf("\n");
                 print_blanks(4 * (brace_level - 1));
-                printf("{\n");
+                printf("{");
             }
-            else if (token[0] == '0')
+            else if (token_ret == T_VALUE)
             {
-                /* this is a value! */
-                printf("%s,\n", token);
-                state = S_GET_VALUE_S;
+                /* this is the first value! */
+                printf("\n");
+                print_blanks(brace_level * 4);
+                printf("%s", token);
             }
-            else
+            else if (token_ret == T_NAME)
             {
                 /* this is a name */
                 print_name(token, brace_level);
-                state = S_IDLE;
             }
             break;
 
         case S_GET_NAME:
-            if (token_ret == '}')
+            if (token_ret == T_NAME)
             {
+                print_name(token, brace_level);
+            }
+            if (token_ret == T_LEFT_BRACE)
+            {
+                brace_level++;
+                state = S_LEFT_BRACE;
+                printf("\n");
                 print_blanks(4 * (brace_level - 1));
-                printf("}\n");
+                printf("{");
+            }
+            else if (token_ret == T_RIGHT_BRACE)
+            {
+                printf("\n");
+                print_blanks(4 * (brace_level - 1));
+                printf("}");
                 brace_level--;
                 if (brace_level == 0)
                 {
                     is_done = 1;
+                    printf("\n");
                 }
-            }
-            else
-            {
-                print_name(token, brace_level);
-                state = S_IDLE;
             }
             break;
         }
+        
+        state = state_table[state][token_ret];
     }
 }
 
@@ -272,9 +306,8 @@ void dump_struct(const char* name, void* address)
     fprintf(p_fp->write_fp, "detach\nquit\n");
     fflush(p_fp->write_fp);
 
-    while (flag)   /* trap here */
-    {
-    }
+    while (flag);   /* trap here */
+
     if (get_type_name(p_fp->read_fp, buf) < 0)
     {
         printf("can't get type name");
@@ -284,6 +317,10 @@ void dump_struct(const char* name, void* address)
     {
         printf("*(%s)(%s) = /* @%p */", buf, name, address);
     }
+    
+//    int c;
+//    while((c = getc(p_fp->read_fp)) != EOF) putchar(c);
+//    return;
 
     /* calc the max assign len */
     max_assign_len = 0;
