@@ -11,6 +11,8 @@ RM            := rm -f
 # The directory to install
 prefix        := /usr/local
 bindir         = $(prefix)/bin
+libdir         = /usr/lib64
+incdir         = /usr/include
 # automatic rules for collecting and assembling all possible source
 # files.
 
@@ -58,11 +60,12 @@ clean:
 	@$(RM) -r $(OBJ_DIR)
 
 install: $(TARGET)
-	$(INSTALL_DIR) $(bindir)
-	$(INSTALL_PRG) $(TARGET) $(bindir)
+	$(INSTALL) -m 644 $(TARGET) $(libdir)
+	$(INSTALL) -m 644 dbg_dump.h $(incdir)
 
 uninstall:
-	$(RM) $(bindir)/$(TARGET)
+	$(RM) $(libdir)/$(TARGET)
+	$(RM) $(incdir)/dbg_dump.h
 
 #
 # Rules for generating target
