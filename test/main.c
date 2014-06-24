@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <inttypes.h>
-#include "dbg_dump.h"
+#include "../dbg_dump.h"
 
 typedef struct _higig2               /* Byte # */
 {                                    /* "Legacy" PPD Overlay 1 */

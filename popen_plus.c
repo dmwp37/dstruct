@@ -112,7 +112,7 @@ error_out:
 int popen_plus_close(struct popen_plus_process *process)
 {
     int pstat;
-    pid_t pid;
+    pid_t pid = -1;
     
     /**
      * If someone else destrys this mutex, then this call will fail and we know

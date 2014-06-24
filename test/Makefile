@@ -20,13 +20,13 @@ OBJ_DIR       := obj
 INC_DIRS      := -I.
 
 CFLAGS        := $(INC_DIRS) -g -Wall -Werror
-LD_FLAGS      :=
+LD_FLAGS      := -L.. -lgdb_print
 
 # target define
-TARGET        := libgdb_print.a
+TARGET        := dstruct
 
 # source files
-SRC_FILES     := popen_plus.c dbg_dump.c
+SRC_FILES     := $(wildcard *.c)
 
 C_SRC_FILES   := $(filter %.c, $(SRC_FILES))
 CPP_SRC_FILES := $(filter %.cpp, $(SRC_FILES))
@@ -69,8 +69,7 @@ uninstall:
 #
 $(TARGET): $(OBJ_DIR) $(OBJ_FILES)
 	@echo "generating $@ ..."
-	@$(AR) -cqs $@ $(OBJ_FILES)
-#	@$(CC) $(LD_FLAGS) -o $@ $(OBJ_FILES)
+	@$(CC) -g -o $@ $(OBJ_FILES) $(LD_FLAGS) 
 
 #
 # Rules for compiling cpp code
