@@ -14,9 +14,6 @@ bindir         = $(prefix)/bin
 # automatic rules for collecting and assembling all possible source
 # files.
 
-# Dep output dir
-DEP_DIR       := .dep
-
 # obj output dir
 OBJ_DIR       := obj
 
@@ -41,12 +38,12 @@ CPP_OBJ_FILES := $(CPP_SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 OBJ_FILES     := $(C_OBJ_FILES) $(CPP_OBJ_FILES)
 
 # Dep generated files
-C_DEPS        := $(C_SRC_FILES:%.c=$(DEP_DIR)/%.d)
-CPP_DEPS      := $(CPP_SRC_FILES:%.cpp=$(DEP_DIR)/%.d)
+C_DEPS        := $(C_SRC_FILES:%.c=$(OBJ_DIR)/%.d)
+CPP_DEPS      := $(CPP_SRC_FILES:%.cpp=$(OBJ_DIR)/%.d)
 DEPS          := $(C_DEPS) $(CPP_DEPS)
 
 
-.PHONY: all clean clean-all install deploy
+.PHONY: all clean install deploy
 
 # This is the default target.  It must be the first declared target.
 all: $(TARGET)
@@ -59,11 +56,6 @@ all: $(TARGET)
 clean:
 	@$(RM) $(OBJ_FILES) $(TARGET)
 	@$(RM) -r $(OBJ_DIR)
-
-# clean-all
-clean-all: clean
-	@$(RM) $(DEPS)
-	@$(RM) -r $(DEP_DIR)
 
 install: $(TARGET)
 	$(INSTALL_DIR) $(bindir)
@@ -98,17 +90,14 @@ $(CPP_OBJ_FILES): $(OBJ_DIR)/%.o: %.cpp
 # Special rules for generating dependencies
 #
 
-dep_dir: $(DEP_DIR)
+dep_dir: $(OBJ_DIR)
 
-$(DEP_DIR):
-	@mkdir -p $(DEP_DIR)
-
-$(C_DEPS):$(DEP_DIR)/%.d: %.c
-	@echo Generating dependencies: $@ ...
+$(C_DEPS):$(OBJ_DIR)/%.d: %.c
+#	@echo Generating dependencies: $@ ...
 	@set -e; $(CC) -MM $(CFLAGS) $< | sed -e 's#^\($*\).o:#$(OBJ_DIR)/\1.o $@:#' > $@
 
-$(CPP_DEPS):$(DEP_DIR)/%.d: %.cpp
-	@echo Generating dependencies: $@ ...
+$(CPP_DEPS):$(OBJ_DIR)/%.d: %.cpp
+#	@echo Generating dependencies: $@ ...
 	@set -e; $(CC) -MM $(CFLAGS) $< | sed -e 's#^\($*\).o:#$(OBJ_DIR)/\1.o $@:#' > $@
 
 # Dep include

@@ -56,7 +56,7 @@ typedef struct person_s
 
 int main()
 {
-    int             a[256] = {0};
+    int             a[256] = {1};
     struct person_s johndoe;
     person_t*       p = &johndoe;
 

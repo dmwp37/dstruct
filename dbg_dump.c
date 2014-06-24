@@ -325,12 +325,12 @@ void dbg_dump(const char* name)
 
     if (get_type_name(p_fp->read_fp, buf) < 0)
     {
-        printf("can't get type name");
+        printf("can't get type name for: %s\n", name);
         return;
     }
     else
     {
-        printf("(%s)(%s) = ", buf, name);
+        printf("\n(%s)(%s) = ", buf, name);
     }
     
 //    int c;
