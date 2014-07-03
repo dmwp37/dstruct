@@ -67,9 +67,12 @@ uninstall:
 #
 # Rules for generating target
 #
-$(TARGET): $(OBJ_DIR) $(OBJ_FILES)
+$(TARGET): $(OBJ_DIR) $(OBJ_FILES) ../libgdb_print.a
 	@echo "generating $@ ..."
 	@$(CC) -g -o $@ $(OBJ_FILES) $(LD_FLAGS) 
+
+../libgdb_print.a:
+	@$(MAKE) -C ../
 
 #
 # Rules for compiling cpp code

@@ -1,10 +1,12 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "popen_plus.h"
 
 extern const char* __progname;
 
 /* tab+name+blank */
 static int max_assign_len = 0;
+int        gdb_trap_flag;
 
 /* state machine states */
 enum
@@ -303,14 +305,14 @@ void dbg_dump(const char* name)
     struct popen_plus_process* p_fp;
 
     char buf[256];
-    int  flag = 1;
     int  old_stdout_fd;
 
     sprintf(buf, "gdb -n -q %s %d", __progname, getpid());
     p_fp = popen_plus(buf);
 
-    fprintf(p_fp->write_fp, "thread 1\n");
-    fprintf(p_fp->write_fp, "set var flag=0\n");
+    fprintf(p_fp->write_fp, "tbreak dbg_dump.c:331 \n");
+    fprintf(p_fp->write_fp, "set var gdb_trap_flag=0\n");
+    fprintf(p_fp->write_fp, "continue\n");
     fprintf(p_fp->write_fp, "frame 1\n");
     fprintf(p_fp->write_fp, "whatis %s\n", name);
     fprintf(p_fp->write_fp, "p/x %s\n", name);
@@ -318,10 +320,15 @@ void dbg_dump(const char* name)
     fprintf(p_fp->write_fp, "detach\nquit\n");
     fflush(p_fp->write_fp);
 
-    while (flag)
+    gdb_trap_flag = 1;
+    while (gdb_trap_flag)
     {
-	    /* trap here */
+        /* trap here */
+        usleep(10);
     }
+
+    /* here is the break point*/
+    gdb_trap_flag = 0;
 
     if (get_type_name(p_fp->read_fp, buf) < 0)
     {
@@ -352,6 +359,7 @@ void dbg_dump(const char* name)
 
     /* second pass for print */
     stat_parsor(p_fp->read_fp);
+    fflush(stdout);
 
     popen_plus_close(p_fp);
 }
