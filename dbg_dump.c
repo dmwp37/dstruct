@@ -6,7 +6,7 @@ extern const char* __progname;
 
 /* tab+name+blank */
 static int max_assign_len = 0;
-int        gdb_trap_flag;
+static int gdb_trap_flag  = 1;
 
 /* state machine states */
 enum
@@ -310,7 +310,7 @@ void dbg_dump(const char* name)
     sprintf(buf, "gdb -n -q %s %d", __progname, getpid());
     p_fp = popen_plus(buf);
 
-    fprintf(p_fp->write_fp, "tbreak dbg_dump.c:331 \n");
+    fprintf(p_fp->write_fp, "watch gdb_trap_flag\n");
     fprintf(p_fp->write_fp, "set var gdb_trap_flag=0\n");
     fprintf(p_fp->write_fp, "continue\n");
     fprintf(p_fp->write_fp, "frame 1\n");
@@ -320,15 +320,14 @@ void dbg_dump(const char* name)
     fprintf(p_fp->write_fp, "detach\nquit\n");
     fflush(p_fp->write_fp);
 
-    gdb_trap_flag = 1;
     while (gdb_trap_flag)
     {
         /* trap here */
         usleep(10);
     }
 
-    /* here is the break point*/
-    gdb_trap_flag = 0;
+    /* here is the watch point*/
+    gdb_trap_flag = 1;
 
     if (get_type_name(p_fp->read_fp, buf) < 0)
     {
