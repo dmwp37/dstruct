@@ -5,9 +5,11 @@
 extern const char* __progname;
 
 /* tab+name+blank */
-static int max_assign_len = 0;
-static int gdb_trap_flag  = 1;
-
+static int                        max_assign_len = 0;
+static int                        gdb_trap_flag  = 1;
+static int                        gdb_running    = 0;
+static struct popen_plus_process* p_fp;
+static pthread_mutex_t            gdb_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* state machine states */
 enum
 {
@@ -300,24 +302,50 @@ static void stat_parsor(FILE* fp)
     }
 }
 
+static void gdb_print_exit()
+{
+    if (gdb_running != 0)
+    {
+        fprintf(p_fp->write_fp, "detach\nquit\n");
+        fflush(p_fp->write_fp);
+        popen_plus_close(p_fp);
+        gdb_running = 0;
+    }
+}
+
+static void gdb_print_init()
+{
+    char buf[256];
+
+    atexit(gdb_print_exit);
+    sprintf(buf, "gdb -n -q %s %d", __progname, getpid());
+    p_fp = popen_plus(buf);
+    /* fprintf(p_fp->write_fp, "watch gdb_trap_flag\n"); */
+    fprintf(p_fp->write_fp, "break %s:358\n", __FILE__);
+    fprintf(p_fp->write_fp, "detach\n");
+    gdb_running = 1;
+}
+
 void gdb_print(const char* option, const char* name)
 {
-    struct popen_plus_process* p_fp;
-
     char buf[256];
     int  old_stdout_fd;
 
-    sprintf(buf, "gdb -n -q %s %d", __progname, getpid());
-    p_fp = popen_plus(buf);
+    pthread_mutex_lock(&gdb_mutex);
 
-    fprintf(p_fp->write_fp, "watch gdb_trap_flag\n");
+    if (gdb_running == 0)
+    {
+        gdb_print_init();
+    }
+
+    fprintf(p_fp->write_fp, "attach %d\n", getpid());
     fprintf(p_fp->write_fp, "set var gdb_trap_flag=0\n");
     fprintf(p_fp->write_fp, "continue\n");
     fprintf(p_fp->write_fp, "frame 1\n");
     fprintf(p_fp->write_fp, "whatis %s\n", name);
     fprintf(p_fp->write_fp, "p %s %s\n", option, name);
     fprintf(p_fp->write_fp, "p %s %s\n", option, name);
-    fprintf(p_fp->write_fp, "detach\nquit\n");
+    fprintf(p_fp->write_fp, "detach\n"); /* this will flush out the gdb output */
     fflush(p_fp->write_fp);
 
     while (gdb_trap_flag)
@@ -360,6 +388,6 @@ void gdb_print(const char* option, const char* name)
     stat_parsor(p_fp->read_fp);
     fflush(stdout);
 
-    popen_plus_close(p_fp);
+    pthread_mutex_unlock(&gdb_mutex);
 }
 
