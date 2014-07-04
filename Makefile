@@ -28,7 +28,7 @@ LD_FLAGS      :=
 TARGET        := libgdb_print.a
 
 # source files
-SRC_FILES     := popen_plus.c dbg_dump.c
+SRC_FILES     := popen_plus.c gdb_print.c
 
 C_SRC_FILES   := $(filter %.c, $(SRC_FILES))
 CPP_SRC_FILES := $(filter %.cpp, $(SRC_FILES))
@@ -61,7 +61,7 @@ clean:
 
 install: $(TARGET)
 	$(INSTALL) -m 644 $(TARGET) $(libdir)
-	$(INSTALL) -m 644 dbg_dump.h $(incdir)
+	$(INSTALL) -m 644 gdb_print.h $(incdir)
 
 uninstall:
 	$(RM) $(libdir)/$(TARGET)
