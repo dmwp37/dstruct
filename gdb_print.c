@@ -300,7 +300,7 @@ static void stat_parsor(FILE* fp)
     }
 }
 
-void dbg_dump(const char* name)
+void gdb_print(const char* name)
 {
     struct popen_plus_process* p_fp;
 
@@ -315,8 +315,8 @@ void dbg_dump(const char* name)
     fprintf(p_fp->write_fp, "continue\n");
     fprintf(p_fp->write_fp, "frame 1\n");
     fprintf(p_fp->write_fp, "whatis %s\n", name);
-    fprintf(p_fp->write_fp, "p/x %s\n", name);
-    fprintf(p_fp->write_fp, "p/x %s\n", name);
+    fprintf(p_fp->write_fp, "p %s\n", name);
+    fprintf(p_fp->write_fp, "p %s\n", name);
     fprintf(p_fp->write_fp, "detach\nquit\n");
     fflush(p_fp->write_fp);
 
