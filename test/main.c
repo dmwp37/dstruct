@@ -64,12 +64,12 @@ int main()
 
     p = p;
 
-    GDB_PRINTX(p);
-    GDB_PRINTX(*p);
-    GDB_PRINTX(johndoe);
-    GDB_PRINTX(a);
-    GDB_PRINTX(a[1] + 10);
-    GDB_PRINTX(sizeof(johndoe));
+    GDB_PRINT(p);
+    GDB_PRINT(*p);
+    GDB_PRINT(johndoe);
+    GDB_PRINT(a);
+    GDB_PRINT(a[1] + 10);
+    GDB_PRINT(sizeof(johndoe));
 
     return 0;
 }

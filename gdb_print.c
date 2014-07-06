@@ -331,7 +331,7 @@ static void gdb_print_init()
     gdb_running = 1;
 }
 
-void gdb_print(const char* option, const char* name)
+void gdb_print(const char* name)
 {
     char buf[256];
     int  old_stdout_fd;
@@ -348,8 +348,8 @@ void gdb_print(const char* option, const char* name)
     fprintf(p_fp->write_fp, "continue\n");
     fprintf(p_fp->write_fp, "frame 1\n");
     fprintf(p_fp->write_fp, "whatis %s\n", name);
-    fprintf(p_fp->write_fp, "p %s %s\n", option, name);
-    fprintf(p_fp->write_fp, "p %s %s\n", option, name);
+    fprintf(p_fp->write_fp, "p /x %s\n", name);
+    fprintf(p_fp->write_fp, "p /x %s\n", name);
     /* this will flush out the gdb output and let the app finish */
     fprintf(p_fp->write_fp, "detach\n");
 
