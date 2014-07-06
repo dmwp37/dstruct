@@ -317,7 +317,7 @@ static void gdb_print_init()
     char buf[256];
 
     atexit(gdb_print_exit);
-    sprintf(buf, "gdb -n -q %s %d", __progname, getpid());
+    sprintf(buf, "gdb -n -q %s %d 2>/dev/null", __progname, getpid());
     p_fp = popen_plus(buf);
     if (p_fp == NULL)
     {
