@@ -49,6 +49,7 @@ struct popen_plus_process *popen_plus(const char *command)
     process->write_fp = fdopen(inpipe[WRITE], "w");
     if (!process->write_fp)
         goto clean_read_fp_out;
+    setvbuf(process->write_fp, NULL, _IOLBF, 0);
     
     if (pthread_mutex_init(&process->mutex, NULL) != 0)
         goto clean_write_fp_out;
