@@ -325,8 +325,8 @@ static void gdb_print_init()
         exit(1);
     }
 
-    /* fprintf(p_fp->write_fp, "watch gdb_trap_flag\n"); */
-    fprintf(p_fp->write_fp, "break %s:363\n", __FILE__);
+    fprintf(p_fp->write_fp, "watch gdb_trap_flag\n");
+    fprintf(p_fp->write_fp, "break %s:361\n", __FILE__);
     fprintf(p_fp->write_fp, "detach\n");
     gdb_running = 1;
 }
@@ -343,9 +343,7 @@ void gdb_print(const char* name)
         gdb_print_init();
     }
 
-    fprintf(p_fp->write_fp, "attach %d\n", getpid());
-    fprintf(p_fp->write_fp, "set var gdb_trap_flag=0\n");
-    fprintf(p_fp->write_fp, "continue\n");
+    fprintf(p_fp->write_fp, "attach %d\nset var gdb_trap_flag=0\ncontinue\n", getpid());
     fprintf(p_fp->write_fp, "frame 1\n");
     fprintf(p_fp->write_fp, "whatis %s\n", name);
     fprintf(p_fp->write_fp, "p /x %s\n", name);
@@ -365,7 +363,7 @@ void gdb_print(const char* name)
     if (get_type_name(p_fp->read_fp, buf) < 0)
     {
         printf("can't get type name for: %s\n", name);
-        return;
+        goto _finish;
     }
     else
     {
@@ -392,7 +390,7 @@ void gdb_print(const char* name)
     /* second pass for print */
     stat_parsor(p_fp->read_fp);
     fflush(stdout);
-
+_finish:
     pthread_mutex_unlock(&gdb_mutex);
 }
 
